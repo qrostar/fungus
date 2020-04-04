@@ -1,3 +1,6 @@
+// This code is part of the Fungus library (https://github.com/snozbot/fungus)
+// It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
+
 #define PRETTY		//Comment out when you no longer need to read JSON to disable pretty Print system-wide
 //Using doubles will cause errors in VectorTemplates.cs; Unity speaks floats
 #define USEFLOAT	//Use floats for numbers instead of doubles	(enable if you're getting too many significant digits in string output)
@@ -12,6 +15,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
+using MoonSharp.Interpreter.Diagnostics.PerformanceCounters;
 /*
 Copyright (c) 2010-2019 Matt Schoen
 
@@ -33,6 +37,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+// Added to Fungus namespace to minimize conflicts with other assets
+namespace Fungus
+{
 
 public class JSONObject : IEnumerable {
 #if POOLING
@@ -741,8 +749,10 @@ public class JSONObject : IEnumerable {
 	}
 	public IEnumerable<string> PrintAsync(bool pretty = false) {
 		StringBuilder builder = new StringBuilder();
+#if !NETFX_CORE
 		printWatch.Reset();
 		printWatch.Start();
+#endif
 		foreach(IEnumerable e in StringifyAsync(0, builder, pretty)) {
 			yield return null;
 		}
@@ -763,11 +773,15 @@ public class JSONObject : IEnumerable {
 			("reached max depth!");
 			yield break;
 		}
+
+#if !NETFX_CORE
 		if(printWatch.Elapsed.TotalSeconds > maxFrameTime) {
 			printWatch.Reset();
 			yield return null;
 			printWatch.Start();
 		}
+#endif
+
 		switch(type) {
 			case Type.BAKED:
 				builder.Append(str);
@@ -801,7 +815,7 @@ public class JSONObject : IEnumerable {
 			case Type.OBJECT:
 				builder.Append("{");
 				if(list.Count > 0) {
-#if(PRETTY)		//for a bit more readability, comment the define above to disable system-wide
+#if (PRETTY)        //for a bit more readability, comment the define above to disable system-wide
 					if(pretty)
 						builder.Append(NEWLINE);
 #endif
@@ -809,7 +823,7 @@ public class JSONObject : IEnumerable {
 						string key = keys[i];
 						JSONObject obj = list[i];
 						if(obj) {
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								for(int j = 0; j < depth; j++)
 									builder.Append("\t"); //for a bit more readability
@@ -818,20 +832,20 @@ public class JSONObject : IEnumerable {
 							foreach(IEnumerable e in obj.StringifyAsync(depth, builder, pretty))
 								yield return e;
 							builder.Append(",");
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								builder.Append(NEWLINE);
 #endif
 						}
 					}
-#if(PRETTY)
+#if (PRETTY)
 					if(pretty)
 						builder.Length -= 2;
 					else
 #endif
 						builder.Length--;
 				}
-#if(PRETTY)
+#if (PRETTY)
 				if(pretty && list.Count > 0) {
 					builder.Append(NEWLINE);
 					for(int j = 0; j < depth - 1; j++)
@@ -843,13 +857,13 @@ public class JSONObject : IEnumerable {
 			case Type.ARRAY:
 				builder.Append("[");
 				if(list.Count > 0) {
-#if(PRETTY)
+#if (PRETTY)
 					if(pretty)
 						builder.Append(NEWLINE); //for a bit more readability
 #endif
 					for(int i = 0; i < list.Count; i++) {
 						if(list[i]) {
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								for(int j = 0; j < depth; j++)
 									builder.Append("\t"); //for a bit more readability
@@ -857,20 +871,20 @@ public class JSONObject : IEnumerable {
 							foreach(IEnumerable e in list[i].StringifyAsync(depth, builder, pretty))
 								yield return e;
 							builder.Append(",");
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								builder.Append(NEWLINE); //for a bit more readability
 #endif
 						}
 					}
-#if(PRETTY)
+#if (PRETTY)
 					if(pretty)
 						builder.Length -= 2;
 					else
 #endif
 						builder.Length--;
 				}
-#if(PRETTY)
+#if (PRETTY)
 				if(pretty && list.Count > 0) {
 					builder.Append(NEWLINE);
 					for(int j = 0; j < depth - 1; j++)
@@ -942,7 +956,7 @@ public class JSONObject : IEnumerable {
 			case Type.OBJECT:
 				builder.Append("{");
 				if(list.Count > 0) {
-#if(PRETTY)		//for a bit more readability, comment the define above to disable system-wide
+#if (PRETTY)        //for a bit more readability, comment the define above to disable system-wide
 					if(pretty)
 						builder.Append("\n");
 #endif
@@ -950,7 +964,7 @@ public class JSONObject : IEnumerable {
 						string key = keys[i];
 						JSONObject obj = list[i];
 						if(obj) {
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								for(int j = 0; j < depth; j++)
 									builder.Append("\t"); //for a bit more readability
@@ -958,20 +972,20 @@ public class JSONObject : IEnumerable {
 							builder.AppendFormat("\"{0}\":", key);
 							obj.Stringify(depth, builder, pretty);
 							builder.Append(",");
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								builder.Append("\n");
 #endif
 						}
 					}
-#if(PRETTY)
+#if (PRETTY)
 					if(pretty)
 						builder.Length -= 2;
 					else
 #endif
 						builder.Length--;
 				}
-#if(PRETTY)
+#if (PRETTY)
 				if(pretty && list.Count > 0) {
 					builder.Append("\n");
 					for(int j = 0; j < depth - 1; j++)
@@ -983,33 +997,33 @@ public class JSONObject : IEnumerable {
 			case Type.ARRAY:
 				builder.Append("[");
 				if(list.Count > 0) {
-#if(PRETTY)
+#if (PRETTY)
 					if(pretty)
 						builder.Append("\n"); //for a bit more readability
 #endif
 					for(int i = 0; i < list.Count; i++) {
 						if(list[i]) {
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								for(int j = 0; j < depth; j++)
 									builder.Append("\t"); //for a bit more readability
 #endif
 							list[i].Stringify(depth, builder, pretty);
 							builder.Append(",");
-#if(PRETTY)
+#if (PRETTY)
 							if(pretty)
 								builder.Append("\n"); //for a bit more readability
 #endif
 						}
 					}
-#if(PRETTY)
+#if (PRETTY)
 					if(pretty)
 						builder.Length -= 2;
 					else
 #endif
 						builder.Length--;
 				}
-#if(PRETTY)
+#if (PRETTY)
 				if(pretty && list.Count > 0) {
 					builder.Append("\n");
 					for(int j = 0; j < depth - 1; j++)
@@ -1182,4 +1196,6 @@ public class JSONObjectEnumer : IEnumerator
             }
         }
     }
+}
+
 }
